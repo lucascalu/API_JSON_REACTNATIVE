@@ -1,0 +1,47 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const sqlite3 = require('sqlite3').verbose();
+
+const app = express();
+const port = 3000;
+
+app.use(bodyParser.json());
+
+// Cria e conecta ao banco de dados SQLite
+const db = new sqlite3.Database(':memory:');
+
+// Cria uma tabela para armazenar os dados
+db.serialize(() => {
+  db.run('CREATE TABLE IF NOT EXISTS exemplo (nome TEXT, idade INTEGER, cidade TEXT); INSERT INTO (nome) VALUES ("TESTE");  ');
+});
+
+app.get('/ler-arquivo', (req, res) => {
+  // Lê os dados da tabela e envia como resposta
+  db.all('SELECT * FROM exemplo', (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: 'Erro ao ler o banco de dados.' });
+    } else {
+      res.json(rows[0]); // Assume que há apenas um registro na tabela
+    }
+  });
+});
+
+app.post('/modificar-arquivo', (req, res) => {
+  const newData = req.body;
+
+  // Atualiza os dados na tabela
+  db.run('DELETE FROM exemplo', (err) => {
+    if (err) {
+      res.status(500).json({ error: 'Erro ao modificar o banco de dados.' });
+    } else {
+      const stmt = db.prepare('INSERT INTO exemplo VALUES (?, ?, ?)');
+      stmt.run(newData.nome, newData.idade, newData.cidade);
+      stmt.finalize();
+      res.json({ success: true, message: 'Banco de dados modificado com sucesso.' });
+    }
+  });
+});
+
+app.listen(port, () => {
+  console.log(`API rodando em http://localhost:${port}`);
+});
