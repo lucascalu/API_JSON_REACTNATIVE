@@ -1,0 +1,53 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const mysql = require('mysql2');
+
+const app = express();
+const port = 3000;
+
+app.use(bodyParser.json());
+
+// Configuração da conexão MySQL
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'exemplo', // Nome da sua base de dados
+});
+
+// Conecta ao banco de dados MySQL
+connection.connect((err) => {
+  if (err) {
+    console.error('Erro ao conectar ao banco de dados:', err);
+  } else {
+    console.log('Conectado ao banco de dados MySQL.');
+  }
+});
+
+app.get('/ler-dados', (req, res) => {
+  // Consulta os dados na tabela e envia como resposta
+  connection.query('SELECT nome FROM exemplo', (err, results) => {
+    if (err) {
+      res.status(500).json({ error: 'Erro ao ler o banco de dados.' });
+    } else {
+      res.json(results[0]); // Assume que há apenas um registro na tabela
+    }
+  });
+});
+
+app.post('/modificar-dados', (req, res) => {
+  const { nome } = req.body;
+
+  // Atualiza os dados na tabela
+  connection.query('INSERT INTO exemplo (nome) VALUES (?)', [nome], (err) => {
+    if (err) {
+      res.status(500).json({ error: 'Erro ao modificar o banco de dados.' });
+    } else {
+      res.json({ success: true, message: 'Banco de dados modificado com sucesso.' });
+    }
+  });
+});
+
+app.listen(port, () => {
+  console.log(`API rodando em http://localhost:${port}`);
+});
